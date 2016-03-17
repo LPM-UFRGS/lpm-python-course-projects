@@ -1,0 +1,2 @@
+Autora: Camilla Zacche
+Plugin para análise de sensitividade.
