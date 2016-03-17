@@ -1,2 +1,131 @@
 Autora: Camilla Zacche
 Plugin para análise de sensitividade.
+
+Introdução
+
+É bastante comum trabalhar com bancos de dados heterotópicos, de modo que
+algumas variáveis possuem amostragem mais abundante que outras. Para que
+haja uma
+correta avaliação da quantidade e qualidade dos elementos presentes na área
+de estudo é
+necessário compreender os motivos pelos quais e os mecanismos que regem a
+falta de dados,
+de modo que a decisão de como tratar a escassez amostral está intimamente
+ligada a estes
+mecanismos e à qualidade dos resultados obtidos. De acordo com a teoria de
+dados faltantes
+de Rubin (1976), existem três mecanismos de falta de dados que relacionam
+dados faltantes às
+variáveis medidas. Considerando um conjunto de dados com N variáveis, o
+primeiro
+mecanismo são os faltantes completamente aleatórios (Missing Completely At
+Random -
+MCAR) onde a probabilidade de faltar uma amostra da variável X 1 não depende
+dos valores
+de X 1 e também não depende dos valores de nenhuma das outras X N  1
+variáveis do banco de
+dados. Já no caso de faltantes aleatórios (Missing At Random - MAR) a
+probabilidade de
+faltar uma amostra de X 1 depende dos valores de alguma das outras X N  1
+variáveis. Os
+faltantes não aleatórios (Missing Not At Random - MNAR) são caracterizados
+pela
+probabilidade de falta depender dos próprios valores da variável X 1 ,
+tornando o tratamento
+deste mecanismo mais complexo que os anteriores. Somente o primeiro caso,
+faltantes
+completamente aleatórios, que a exclusão de amostras incompletas e
+regressões lineares
+podem ser utilizadas para a imputação das faltantes sem gerar viés
+estatístico no banco de
+dados. Para os outros dois casos de falta são necessárias metodologias mais
+robustas, a fim de
+manter a estatística dos dados sã.
+Para tratamento de dados faltantes MAR, há uma abordagem aplicada a dados
+geológicos, de modo que apresentam correlação espacial, introduzida por Ren
+(2007)
+chamada, Atualização Bayesiana (Bayesian Update - BU). A metodologia,
+embasada na
+estatística bayesiana, gera N cenários completos a partir de um banco de
+dados incompleto
+original.
+Porém, quando a hipótese de dados faltantes aleatórios é violada a
+metodologia acima
+pode levar a viés nos resultados do modelo. Rubin (1987) propõe então que
+quando lidando
+com dados faltantes não aleatórios (MNAR), uma analise de sensitividade seja
+conduzida em
+resultados obtidos a partir de modelos construídos assumindo o mecanismo
+MAR. Rubin
+propõe que uma vez que os cenários imputados tenham sido gerados, seja
+adicionada uma4
+constante aos valores a fim de compensar qualquer super ou subestimativa.
+Esta constante,
+porém é escolhida arbitrariamente, baseada no conhecimento que o usuário tem
+sobre o banco
+de dados em estudo. Esta abordagem de sensitividade deu origem à metodologia
+apresentada
+a seguir.
+A fim de tratar o mecanismo de falta MNAR, que se apresenta em bancos de
+dados
+geológicos, se busca realizar a analise de sensitividade. Em bancos de dados
+multivariados,
+algumas amostras são mais abundantes que outras, de modo que a constante a
+ser adicionada
+nos resultados obtidos a partir do modelo MAR de imputação, por meio de BU
+será calculada
+baseada na variável mais abundante presente no conjunto amostral.
+Primeiramente a variável do conjunto que é mais abundante é estimada por
+meio de
+krigagem ordinária utilizando toda amostra desta variável disponível. Após é
+realizada uma
+estimativa por meio de krigagem ordinária utilizando somente as amostras
+colocadas com a
+variável menos abundante do conjunto de dados. Então é realizada uma espécie
+de validação
+cruzada entre os dois modelos de blocos resultantes da krigagem ordinária,
+do qual é obtido
+um desvio relativo entre as estimativas. O desvio relativo calculado é a
+constante a ser
+adicionada nos cenários imputados por BU da variável menos abundante,
+proporcionalmente
+em cada valor imputado. Por exemplo, se o desvio relativo é calculado em
+18%, será
+adicionado ou subtraído do valor imputado 18% do seu valor.5
+Plugin
+Para realizar a tarefa descrita acima, foi desenvolvido um plugin para o
+sgems que está
+dividido em duas partes: a primeira calcula o desvio relativo entre os
+modelos de blocos
+gerados a partir da variável mais abundante como mostra a figura 1.
+Aba 1
+
+Figura 1 - primeira aba do plugin desenvolvido. Calculo de desvio relativo
+A segunda adiciona ou subtrai a constante definida no cenário imputado da
+variável
+desejada, como pode ser visto na figura 2.
+Aba 2
+
+Figura 2 - Segunda aba. Utilização da constante no cenário imputado
+
+O usuário nesta aba deve selecionar a caixa de uso de constante para que
+esta seja
+adicionada na variável imputada. Deve também informar o valor da constante e
+selecionar se
+será adicionada ou subtraída. Nesta etapa o usuário já calculou o desvio e
+deve na primeira
+aba selecionar na primeira caixa a variável original com faltantes (a menos
+abundante, na qual6
+se procedeu a BU), e na segunda caixa a variável do cenário imputado, pois a
+constante é
+adicionada somente nos valores imputados, onde originalmente não havia valor
+amostrado. O
+código é mostrado abaixo:78
+Conclusões
+O curso permitiu que se desenvolvesse um plugin funcional, inserido ao
+problema
+abordado na tese de doutorado, onde foram obtidos resultados coerentes e
+satisfatórios a partir
+do plugin. Além disso, foi obtido embasamento para evoluções e sofisticação
+do próprio
+plugin aqui demonstrado.
