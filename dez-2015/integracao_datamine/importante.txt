@@ -1,0 +1,3 @@
+o nome de nenhuma pasta do diretorio pode ter acentos ou caracteres especiais
+
+Autor: Ronal Leal

@@ -1,0 +1,174 @@
+﻿<html>
+	<head>
+
+		<style type="text/css">
+			.tabela{
+				width: 300;
+				font-family: Calibri;
+				font-size: 14px;
+				text-align: center;
+				font-weight: bold;
+			}
+
+			.textocentralizado{
+				text-align: center;
+			}
+
+			.assinatura{
+				text-align: right;
+				font-size: 11px;
+				font-family: Calibri;
+				font-weight: bold;
+			}
+
+			.titulo{
+				width: 300;
+				text-align: center;
+				font-weight: bold;
+				font-size: 22px;
+				background-color: red;
+			}
+		</style>
+
+		<script type="text/javascript" src="json2.js"></script>
+		<script type="text/javascript">
+
+			//VARIAVEIS DE INICIALIZACAO DAS BIBLIOTECAS DATAMINE E PYTHON
+			var oScript = null;
+			var oDmApp = null;
+			var oPycom = null;
+
+			//FUNCAO NECESSARIA PARA IMPORTAÇÃO DA BIBLIOTECA DO DATAMINE E DO SERVIDO PYTHON
+			function AutoConnect(){
+				try{
+					oScript = new ActiveXObject("StudioCommon.ScriptHelper");
+				}
+				catch(e){
+					oScript = new ActiveXObject("DatamineStudio.ScriptHelper");
+				}
+				oScript.initialize(window);
+				oDmApp = oScript.getApplication();
+
+				oPycom = new ActiveXObject("CalcVizinhos");
+			}
+
+			//FUNCAO PRINCIPAL
+			function execute(){
+				//CRIA AS COLUNAS DE VIZINHOS NO ARQUIVO DO MODELO DE BLOCOS
+				oDmApp.ParseCommand("extra &IN=" + mdblocosin.value + " &OUT=" + mdblocosout.value + " @APPROX=0 @PRINT=0"+
+				 " 'VNORTE=0'"+
+				 " 'VSUL=0'"+
+				 " 'VLESTE=0'"+
+				 " 'VOESTE=0'"+
+				 " 'VCIMA=0'"+
+				 " 'VBAIXO=0'"+
+				 " 'GO'");
+
+				//ABRE O ARQUIVO E LOCALIZA O NUMERO DAS COLUNAS DE VIZINHO CRIADAS
+				var dmHandler = new ActiveXObject("DmFile.DmTableADO");
+				dmHandler.Open(oDmApp.ActiveProject.GetDBObjFilePath(mdblocosout.value),false);
+				nrcolunas = dmHandler.Schema.FieldCount;
+				for(var i = 0; i < nrcolunas; i++){
+					if(dmHandler.Schema.GetFieldName(i+1) == "VNORTE"){
+						var nrcolnorte = i + 1;
+						var nrcolsul = i + 2;
+						var nrcolleste = i + 3;
+						var nrcoloeste = i + 4;
+						var nrcolcima = i + 5;
+						var nrcolbaixo = i + 6;
+					}
+				}
+
+				//COLETA AS INFORMACOES NECESSARIAS
+				dmHandler.MoveLast();
+				var ny = dmHandler.getNamedColumn("NY");
+				var nz = dmHandler.getNamedColumn("NZ");
+				var ijkultimobloco = dmHandler.getNamedColumn("IJK");
+
+				//CHAMA A FUNCAO PYTHON QUE CALCULA O I, J, K MAXIMO DO MODELO DE BLOCOS
+				var ijkmax = oPycom.infoproto(ny,nz,ijkultimobloco);
+				
+				//GUARDA TODOS OS VALORES DE IJK DO ARQUIVO DO MODELO DE BLOCOS EM UM VETOR E TRANSFORMA ESSE VETOR EM STRING COM [] PARA A CORRETA LEITURA DENTRO DO PYTHON
+				var vetorijk = [];
+				dmHandler.MoveFirst();
+				while(!dmHandler.EOF){
+					vetorijk.push(dmHandler.getNamedColumn("IJK"));
+					dmHandler.MoveNext();
+				}
+				vetorijk = "[" + vetorijk + "]";
+
+				//CHAMA A FUNCAO PYTHON QUE CALCULA OS VIZINHOS E LOGO EM SEGUIDA JA CHAMA A FUNCAO JAVASCRIPT QUE TRANSFORMA O DADO RETORNADO PELO PYTHON EM OBJETO JAVASCRIPT
+				var vetorvizinhos = oPycom.calcvizinhos(ny,nz,vetorijk,ijkmax);
+				vetorvizinhos = transformardados(vetorvizinhos);
+
+				//ESCREVE O NUMERO DOS VIZINHOS NO ARQUIVOS
+				dmHandler.MoveFirst();
+				for(var i = 0; i < vetorvizinhos.length; i = i + 6){
+					dmHandler.SetColumn(nrcolnorte,vetorvizinhos[i]);
+					dmHandler.SetColumn(nrcolsul,vetorvizinhos[i+1]);
+					dmHandler.SetColumn(nrcolleste,vetorvizinhos[i+2]);
+					dmHandler.SetColumn(nrcoloeste,vetorvizinhos[i+3]);
+					dmHandler.SetColumn(nrcolcima,vetorvizinhos[i+4]);
+					dmHandler.SetColumn(nrcolbaixo,vetorvizinhos[i+5]);
+					dmHandler.MoveNext();
+				}
+				dmHandler.Close();
+			}
+
+			//ESTA FUNCAO RECEBE O VETOR DO PYTHON COMO UMA STRING E TRANSFORMA O MESMO EM UM OBJETO JAVASCRIPT TENTANDO ATRAVÉS DO JSON OU DO FOR
+			function transformardados(vetor){
+				vetor2 = [];
+				try{
+					vetor2 = JSON.parse(vetor);
+				}
+				catch(e){
+					var vetor = vetor.replace("[","").replace("]","").split(",");
+					for(var i = 0; i < vetor.length; i++){
+						vetor2[i] = Number(vetor[i]);
+					}
+				}
+				return vetor2;
+			}
+
+			//ABRE O BROWSER DENTRO DO DATAMINE PARA ESCOLHA DO MODELO DE BLOCOS DE ENTRADA
+			function buscararquivo(nome,tipofiltro){
+				var browser=oDmApp.ActiveProject.Browser;
+				browser.TypeFilter=oScript.DmFileType[tipofiltro];
+				browser.show(false);
+				nome.value=browser.FileName;
+			}
+
+		</script>
+	</head>
+	<body onload="AutoConnect();" onunload="oDmApp = null;oScript = null;">
+
+		<table border="0" class="titulo">
+			<tr>
+				<td> DESCOBRIR VIZINHOS </td>
+			</tr>
+		</table> <br>
+
+		<table border="0" class="tabela">
+			<tr>
+				<td width="100"> Md Input </td>
+				<td> <input id="mdblocosin" class="textocentralizado" disabled> </td> 
+				<td width="40"> <input type="button" value="..." style="width:25" onclick="buscararquivo(mdblocosin,'dmBlockModel')"> </td>
+			</tr>
+		</table> <br>
+
+		<table border="0" class="tabela">
+			<tr>
+				<td width="100"> Md Output </td>
+				<td> <input id="mdblocosout" class="textocentralizado"> </td>
+				<td width="40"> </td>
+			</tr>
+		</table> <br>
+
+		<table border="0" class="tabela">
+			<tr>
+				<td> <input type="button" value="Executar" onclick="execute()"> </td>
+			</tr>
+		</table>
+
+	</body>
+</html>
