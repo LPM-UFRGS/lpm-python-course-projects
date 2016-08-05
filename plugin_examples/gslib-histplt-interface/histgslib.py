@@ -204,9 +204,9 @@ class histplugin():
       # column data will be 1 ever.
       # the weight column will depend if the weight is set, 0 if no weight is set, 2 if some weight is set.
       if (self.dict_with_property['weight_property']=='' or self.dict_with_property['weight_grid']==''):
-        writebuff='1 0'
+        writebuff='1 0\n'
       else:
-        writebuff='1 2'
+        writebuff='1 2\n'
       file.write(writebuff)
 
       writebuff=self.dict_with_property['lim_cut_min']+" "+self.dict_with_property['lim_cut_max']+"\n"
